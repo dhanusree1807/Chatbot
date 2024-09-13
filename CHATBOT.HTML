@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html >
+<head>
+  
+    <title>Chatbot Interface</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: rgb(3, 3, 3);
+            color: aliceblue;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            max-width: 1500px;
+            background-color: rgb(35, 34, 34);
+            box-shadow: 0 0 10px rgba(200, 160, 124, 0.1);
+            height: 90%;
+            position: relative;
+        }
+
+        .history {
+            width: 30%;
+            border-right: 1px solid #ddd;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+        }
+
+        .history.hidden {
+            width: 0;
+            padding: 0;
+            border-right: none;
+            overflow: hidden;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .history-header h2 {
+            margin: 0 auto;
+            flex-grow: 1;
+            text-align: center;
+        }
+
+        .clear-btn {
+            cursor: pointer;
+            background-color: transparent;
+            color: white;
+            border: none;
+            font-size: 20px;
+        }
+        .account-btn {
+            cursor: pointer;
+            background-color: transparent;
+            color: white;
+            border: none;
+            font-size: 20px;
+            position: absolute;
+        }
+
+
+        .clear-btn:hover, .account-btn:hover {
+            color: #ff4d4d;
+        }
+
+        .account-btn {
+            margin-left: 10px; 
+        }
+
+        .history ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .history li {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .chatbot {
+            width: 70%;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+        }
+
+        .chatbot.full-width {
+            width: 100%;
+        }
+
+        #chatbox {
+            flex-grow: 1;
+            border: 2px solid #ddd;
+            padding: 10px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            font-family: Verdana, Geneva, Tahoma, sans-serif;
+            border-radius: 10px;
+            
+        }
+
+        .input-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        #user-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 3px solid #ddd;
+            border-radius: 10px;
+            padding-right: 50px; 
+        }
+
+        .icon-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .icon-container i {
+            margin-left: 10px;
+            color: #007bff;
+            cursor: pointer;
+            font-size: 30px;
+        }
+
+        .icon-container i:hover {
+            color: #0056b3;
+        }
+
+        #image-input {
+            display: none;
+        }
+
+        #image-input-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        .image-preview {
+            max-width: 100px;
+            max-height: 100px;
+            margin-bottom: 10px;
+        }
+
+        .toggle-icon {
+            position: absolute;
+            left: 0;
+            top: 10px;
+            cursor: pointer;
+            color: #007bff;
+            font-size: 20px;
+            padding: 10px;
+            transition: left 0.3s ease;
+        }
+
+        .toggle-icon.hidden {
+            left: -50px;
+        }
+
+        .toggle-icon i:hover {
+            color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="history" id="history-section">
+            <div class="toggle-icon" onclick="toggleHistory()"><i class="fas fa-chevron-left" id="toggle-arrow"></i></div>
+            <div class="history-header">
+                <h2>Search History</h2>
+                <button class="clear-btn" onclick="clearHistory()">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+                <button class="account-btn" onclick="openAccountCreation()">
+                    <i class="fas fa-user-plus"></i>
+                </button>
+            </div>
+            <ul id="history-list"></ul>
+        </div>
+        <div class="chatbot" id="chatbot-section">
+            <div id="chatbox">
+                
+                <p><strong>ChatBOT:</strong> How can I assist you today?</p>
+            </div>
+            <div class="input-container">
+                <input type="text" id="user-input" placeholder="Type a message...">
+                <div class="icon-container">
+                    <label for="image-input" id="image-input-label"><i class="fas fa-image"></i></label>
+                    <input type="file" id="image-input" accept="image/*" onchange="previewImage(event)">
+                    <i class="fas fa-paper-plane" onclick="sendMessage()"></i>
+                </div>
+            </div>
+            <div id="image-preview-container"></div>
+        </div>
+    </div>
+    <script>
+        let selectedImage = null;
+        let historyVisible = true;
+
+        function previewImage(event) {
+            const imagePreviewContainer = document.getElementById('image-preview-container');
+            imagePreviewContainer.innerHTML = ''; 
+            selectedImage = event.target.files[0];
+
+            if (selectedImage) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'image-preview';
+                    imagePreviewContainer.appendChild(img);
+                };
+                reader.readAsDataURL(selectedImage);
+            }
+        }
+
+        function sendMessage() {
+            const userInput = document.getElementById('user-input').value;
+            const chatbox = document.getElementById('chatbox');
+            const historyList = document.getElementById('history-list');
+
+            if (userInput.trim() !== '') {
+           
+                const userMessage = document.createElement('p');
+                userMessage.textContent = userInput;
+                chatbox.appendChild(userMessage);
+
+                const historyItem = document.createElement('li');
+                historyItem.textContent = userInput;
+                historyList.appendChild(historyItem);
+
+               
+                document.getElementById('user-input').value = '';
+            }
+
+            if (selectedImage) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    
+                    const simulatedTextFromImage = "Simulated text extracted from the image.";
+
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'image-preview';
+                    chatbox.appendChild(img);
+
+                    const imageText = document.createElement('p');
+                    imageText.textContent = simulatedTextFromImage;
+                    chatbox.appendChild(imageText);
+
+                   
+                    const historyItem = document.createElement('li');
+                    historyItem.textContent = simulatedTextFromImage;
+                    historyList.appendChild(historyItem);
+
+                   
+                    document.getElementById('image-preview-container').innerHTML = '';
+                    selectedImage = null;
+                };
+                reader.readAsDataURL(selectedImage);
+
+              
+                document.getElementById('image-input').value = '';
+            }
+
+          
+            const botResponse = document.createElement('p');
+            botResponse.innerHTML = "<strong>ChatGPT:</strong> This is a computer response.";
+            chatbox.appendChild(botResponse);
+
+            
+            const botHistoryItem = document.createElement('li');
+            botHistoryItem.textContent = "This is a computer response.";
+            historyList.appendChild(botHistoryItem);
+        }
+
+        function toggleHistory() {
+            const historySection = document.getElementById('history-section');
+            const chatbotSection = document.getElementById('chatbot-section');
+            const toggleArrow = document.getElementById('toggle-arrow');
+
+            historyVisible = !historyVisible;
+
+            if (historyVisible) {
+                historySection.classList.remove('hidden');
+                chatbotSection.classList.remove('full-width');
+                toggleArrow.classList.remove('fa-chevron-right');
+                toggleArrow.classList.add('fa-chevron-left');
+            } else {
+                historySection.classList.add('hidden');
+                chatbotSection.classList.add('full-width');
+                toggleArrow.classList.remove('fa-chevron-left');
+                toggleArrow.classList.add('fa-chevron-right');
+            }
+        }
+
+        function clearHistory() {
+            document.getElementById('history-list').innerHTML = '';
+            document.getElementById('chatbox').innerHTML = '<p><strong>ChatGPT:</strong> How can I assist you today?</p>';
+        }
+
+        function openAccountCreation() {
+            
+            alert('Open account creation page/modal');
+        }
+    </script>
+</body>
+</html>
