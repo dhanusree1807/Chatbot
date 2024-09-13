@@ -1,1 +1,1 @@
-                                                            Creating a replica of chatgpt using html,css and javascript.
+Creating a replica of chatgpt using html,css and javascript.
